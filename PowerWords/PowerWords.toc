@@ -1,0 +1,10 @@
+## Interface: 120000
+## Title: PowerWords
+## IconTexture: Interface\Icons\Spell_Holy_PowerInfusion
+## Notes: Random whispers on Power Infusion.
+## Author: Hockeyflame
+## Version: 1.0.0
+## SavedVariables: PowerWordsDB
+
+Core.lua
+ConfigUI.lua
