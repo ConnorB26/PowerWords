@@ -91,17 +91,6 @@ function PowerWords:IsGuildmate(fullName)
 
     local short = Ambiguate(fullName, "short")
 
-    if C_GuildInfo and C_GuildInfo.GetNumGuildMembers and C_GuildInfo.GetGuildRosterInfo then
-        local n = C_GuildInfo.GetNumGuildMembers()
-        for i = 1, n do
-            local info = C_GuildInfo.GetGuildRosterInfo(i)
-            if info and info.name and Ambiguate(info.name, "short") == short then
-                return true
-            end
-        end
-        return false
-    end
-
     if GetNumGuildMembers and GetGuildRosterInfo then
         for i = 1, GetNumGuildMembers() do
             local name = GetGuildRosterInfo(i)
@@ -115,34 +104,18 @@ function PowerWords:IsGuildmate(fullName)
 end
 
 function PowerWords:IsBNetFriend(fullName)
-    if not BNGetNumFriends then return false end
+    if not C_BattleNet then return false end
 
     local targetShort = Ambiguate(fullName, "short")
+    local numFriends = BNGetNumFriends and BNGetNumFriends() or 0
 
-    if BNGetNumFriendGameAccounts and BNGetFriendGameAccountInfo and BNGetFriendInfo then
-        local num = BNGetNumFriends()
-        for i = 1, num do
-            local hasAccount = select(1, BNGetFriendInfo(i))
-            if hasAccount then
-                local gameAccounts = BNGetNumFriendGameAccounts(i) or 0
-                for j = 1, gameAccounts do
-                    local info = BNGetFriendGameAccountInfo(i, j)
-                    if info and info.clientProgram == "WoW" and info.characterName == targetShort then
-                        return true
-                    end
-                end
-            end
-        end
-        return false
-    end
-
-    if BNGetFriendInfo and BNGetGameAccountInfo then
-        local num = BNGetNumFriends()
-        for i = 1, num do
-            local _, _, _, _, _, _, _, _, _, _, _, _, _, _, bnetIDGameAccount = BNGetFriendInfo(i)
-            if bnetIDGameAccount then
-                local _, characterName = BNGetGameAccountInfo(bnetIDGameAccount)
-                if characterName == targetShort then
+    for i = 1, numFriends do
+        local accountInfo = C_BattleNet.GetFriendAccountInfo(i)
+        if accountInfo then
+            local numGameAccounts = C_BattleNet.GetFriendNumGameAccounts(i) or 0
+            for j = 1, numGameAccounts do
+                local gameInfo = C_BattleNet.GetFriendGameAccountInfo(i, j)
+                if gameInfo and gameInfo.clientProgram == BNET_CLIENT_WOW and gameInfo.characterName == targetShort then
                     return true
                 end
             end
@@ -181,12 +154,7 @@ function PowerWords:GetNextMessage()
     local msgs = PowerWordsDB and PowerWordsDB.messages
     if type(msgs) ~= "table" or #msgs == 0 then return nil end
 
-    PowerWordsDB._msgIndex = (PowerWordsDB._msgIndex or 0) + 1
-    if PowerWordsDB._msgIndex > #msgs then
-        PowerWordsDB._msgIndex = 1
-    end
-
-    return msgs[PowerWordsDB._msgIndex]
+    return msgs[math.random(#msgs)]
 end
 
 function PowerWords:SendTestMessage(toTarget)
@@ -210,7 +178,7 @@ function PowerWords:SendTestMessage(toTarget)
         recipient = self:NormalizeName(UnitName("player")) or UnitName("player")
     end
 
-    SendChatMessage(msg, "WHISPER", nil, recipient)
+    C_ChatInfo.SendChatMessage(msg, "WHISPER", nil, recipient)
 end
 
 function PowerWords:SendPIMessage(destName)
@@ -229,7 +197,7 @@ function PowerWords:SendPIMessage(destName)
     local msg = self:GetNextMessage()
     if not msg then return end
 
-    SendChatMessage(msg, "WHISPER", nil, destName)
+    C_ChatInfo.SendChatMessage(msg, "WHISPER", nil, destName)
 end
 
 -- Slash commands
@@ -246,6 +214,8 @@ local f = CreateFrame("Frame")
 f:RegisterEvent("ADDON_LOADED")
 f:RegisterUnitEvent("UNIT_SPELLCAST_SENT", "player")
 f:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+f:RegisterUnitEvent("UNIT_SPELLCAST_FAILED", "player")
+f:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTED", "player")
 
 f:SetScript("OnEvent", function(_, event, ...)
     if event == "ADDON_LOADED" then
@@ -280,5 +250,14 @@ f:SetScript("OnEvent", function(_, event, ...)
         if targetName and targetName ~= "" then
             PowerWords:SendPIMessage(targetName)
         end
+        return
+    end
+
+    if event == "UNIT_SPELLCAST_FAILED" or event == "UNIT_SPELLCAST_INTERRUPTED" then
+        local unit, castGUID, spellId = ...
+        if unit ~= "player" then return end
+        if spellId ~= PI_SPELL_ID then return end
+
+        PowerWords._pendingPITargetByCastGUID[castGUID] = nil
     end
 end)
