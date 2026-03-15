@@ -1,9 +1,14 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 1.0.2)"
+        required: true
+
+permissions:
+  contents: write
 
 jobs:
   release:
@@ -13,10 +18,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Create and push tag
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git push origin "$VERSION"
+
       - name: Package and release
         uses: BigWigsMods/packager@v2
         env:
           CF_API_KEY: ${{ secrets.CF_API_KEY }}
           GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: -p ${{ secrets.CF_PROJECT_ID }}
