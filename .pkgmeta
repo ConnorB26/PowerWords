@@ -4,4 +4,6 @@ ignore:
   - scripts
   - README.md
   - LICENSE
+  - CHANGELOG.md
   - .gitignore
+  - .vscode
