@@ -14,13 +14,6 @@ local function Print(msg)
     DEFAULT_CHAT_FRAME:AddMessage(("|cffffd200PowerWords:|r %s"):format(msg))
 end
 
-local function GetAudienceText(mode)
-    for _, opt in ipairs(AUDIENCE_OPTIONS) do
-        if opt.key == mode then return opt.text end
-    end
-    return "Everyone"
-end
-
 local function EnsureSpecialFrame(frameName)
     if type(UISpecialFrames) ~= "table" then return end
     for _, name in ipairs(UISpecialFrames) do
@@ -84,9 +77,9 @@ function PowerWords:CreateConfigWindow()
     audLabel:SetPoint("TOPLEFT", enableCheck, "BOTTOMLEFT", 0, -12)
     audLabel:SetText("Audience:")
 
-    local audDrop = CreateFrame("Frame", "PowerWordsAudienceDropdown", f, "UIDropDownMenuTemplate")
-    audDrop:SetPoint("LEFT", audLabel, "RIGHT", -10, -2)
-    UIDropDownMenu_SetWidth(audDrop, 210)
+    local audDrop = CreateFrame("DropdownButton", "PowerWordsAudienceDropdown", f, "WowStyle1DropdownTemplate")
+    audDrop:SetPoint("LEFT", audLabel, "RIGHT", 4, 0)
+    audDrop:SetWidth(230)
     f.audienceDropdown = audDrop
 
     -- List (Whitelist/Blacklist)
@@ -282,29 +275,18 @@ function PowerWords:CreateConfigWindow()
 
         LoadMessagesFromDB()
 
-        local mode = PowerWordsDB.audience.mode or "EVERYONE"
-        UIDropDownMenu_SetSelectedValue(audDrop, mode)
-        UIDropDownMenu_SetText(audDrop, GetAudienceText(mode))
-
         LoadListFromDB()
     end
 
     -- Dropdown
-    UIDropDownMenu_Initialize(audDrop, function(_, level)
-        local function OnClick(btn)
-            local newMode = btn.value
-            PowerWordsDB.audience.mode = newMode
-            UIDropDownMenu_SetSelectedValue(audDrop, newMode)
-            UIDropDownMenu_SetText(audDrop, GetAudienceText(newMode))
-            LoadListFromDB()
-        end
-
+    audDrop:SetupMenu(function(_, rootDescription)
         for _, opt in ipairs(AUDIENCE_OPTIONS) do
-            local info = UIDropDownMenu_CreateInfo()
-            info.text = opt.text
-            info.value = opt.key
-            info.func = OnClick
-            UIDropDownMenu_AddButton(info, level)
+            rootDescription:CreateRadio(opt.text, function()
+                return PowerWordsDB.audience.mode == opt.key
+            end, function()
+                PowerWordsDB.audience.mode = opt.key
+                LoadListFromDB()
+            end)
         end
     end)
 
