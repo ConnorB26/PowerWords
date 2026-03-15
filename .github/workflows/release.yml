@@ -22,7 +22,7 @@ jobs:
         run: |
           VERSION="${{ github.event.inputs.version }}"
           if git rev-parse "$VERSION" >/dev/null 2>&1; then
-            echo "Tag $VERSION already exists."
+            echo "Tag $VERSION already exists, aborting."
             exit 1
           fi
           git config user.name "github-actions[bot]"
@@ -35,3 +35,5 @@ jobs:
         env:
           CF_API_KEY: ${{ secrets.CF_API_KEY }}
           GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: -t PowerWords
