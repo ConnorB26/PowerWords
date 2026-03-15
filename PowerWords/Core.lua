@@ -107,7 +107,7 @@ function PowerWords:IsBNetFriend(fullName)
     if not C_BattleNet then return false end
 
     local targetShort = Ambiguate(fullName, "short")
-    local numFriends = BNGetNumFriends and BNGetNumFriends() or 0
+    local numFriends = (C_BattleNet.GetNumFriends and C_BattleNet.GetNumFriends()) or (BNGetNumFriends and BNGetNumFriends()) or 0
 
     for i = 1, numFriends do
         local accountInfo = C_BattleNet.GetFriendAccountInfo(i)
