@@ -3,7 +3,8 @@
 ## IconTexture: Interface\Icons\Spell_Holy_PowerInfusion
 ## Notes: Random whispers on Power Infusion.
 ## Author: Hockeyflame
-## Version: 1.0.1
+## Version: @project-version@
+## X-Curse-Project-ID: 1443295
 ## SavedVariables: PowerWordsDB
 
 Core.lua

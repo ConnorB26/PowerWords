@@ -1,0 +1,7 @@
+package-as: PowerWords
+
+ignore:
+  - scripts
+  - README.md
+  - LICENSE
+  - .gitignore
